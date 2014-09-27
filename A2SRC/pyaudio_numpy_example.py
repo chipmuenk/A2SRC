@@ -39,9 +39,9 @@ q_obj = (14, 0, 'round', 'wrap') # Define format for Fixpoint object
 # Framesize for reading, processing and writing. Larger values reduce
 # read / write / array initializing overhead but increase memory consumption,
 # latency and granularity:
-CHUNK = 10000
+CHUNK = 1024
 
-wf_in = wave.open(r'C:\Windows\Media\chord.wav', 'rb') # open WAV-File for reading
+wf_in = wave.open(r'C:\Windows\Media\chord.wav', 'r') # open WAV-File for reading
 #wf_in = wave.open(r'D:\Musik\wav\Jazz\07 - Duet.wav')
 #wf_in = wave.open(r'D:\Daten\share\Musi\wav\Feist - My Moon My Man.wav')
 
@@ -69,29 +69,31 @@ stream = p.open(format=p.get_format_from_width(sampwidth),
                 channels=nchannels,
                 rate=framerate,
                 output=True)
-i = 0
-data_out = 'dummy'
-while data_out != '': # read while there are samples
-    i += CHUNK
-#    print(i)
-
-# read CHUNK frames to string and convert to numpy array:
-    samples = np.fromstring(wf_in.readframes(CHUNK), dtype=np_type)
-#    print(samples[0:10])
 
 # allocate variables in memory for subsequent speed-up:    
-    samples_new = zeros(len(samples), dtype=np_type)  #16 bit numpy array 
-    samples_np = zeros(len(samples), dtype=np.float32) # float np array
-    samples_l = zeros(len(samples)/2, dtype=np_type) # 16 bit L-channel np arr.
-    samples_r = zeros(len(samples_l), dtype=np_type) # 16 bit R-channel np arr.
+samples_new = zeros(CHUNK*2, dtype=np_type)  #16 bit numpy array 
+samples_np = zeros(CHUNK*2, dtype=np.float32) # float np array
+samples_in = zeros(CHUNK*2, dtype=np_type) # float np array
+samples_l = zeros(CHUNK, dtype=np_type) # 16 bit L-channel np arr.
+samples_r = zeros(CHUNK, dtype=np_type) # 16 bit R-channel np arr.
+
+i = 0
+data_out = 'dummy'
+while data_out: # read while there are samples
+
+# read CHUNK frames to string and convert to numpy array:
+    samples_in = np.fromstring(wf_in.readframes(CHUNK), dtype=np_type)
+    i += CHUNK
+    print(i, len(samples_in))
+#    print(samples[0:10])
 
 # R / L samples of WAV are interleaved, each sample is 16 bit = 2 Bytes
 # Split array into an R and an L array to allow for easier processing:
 
 ## Sample = array element word length = 16 bit -> optimum!
 ## dtype = np.int16 (16 bits): 1 ndarray element = 1 sample :
-    samples_l = samples[0::2] # take every 2nd sample, starting from element 0
-    samples_r = samples[1::2] # take every 2nd sample, starting from element 1
+    samples_l = samples_in[0::2] # take every 2nd sample, starting from 0
+    samples_r = samples_in[1::2] # take every 2nd sample, starting from 1
 
 ## Array element = 8 bit word length, store LSB and MSB separately -> not good
 ## dtype = np.int8 (8 bits) = 1 ndarray element
@@ -114,16 +116,18 @@ while data_out != '': # read while there are samples
 
 ## Examples for processing L and R channel separately:
 # Swap L and R channel:
-#    samples_new[0::2] = samples_r
-#    samples_new[1::2] = samples_l
-    
+    if len(samples_r) < CHUNK: # check whether frame has full length, otherwise
+    # the indexing operation will fail (len(samples_new)/2 > len(samples_r))
+        samples_new = zeros(len(samples_in), dtype=np_type) 
+    samples_new[0::2] = samples_r
+    samples_new[1::2] = samples_l
     
 ## Examples for processing the stereo stream: 
 #  This only works for sample-by-sample operations,
 #  not e.g. for filtering where consecutive samples are combined
     
 #    samples_new = samples # pass-through
-    samples_new, N_ov = dsp.fixed(q_obj, samples) # Fix-point conversion
+#    samples_new, N_ov = dsp.fixed(q_obj, samples) # Fix-point conversion
 #    samples_new = abs(samples) # I've got a fuzzbox and I'm gonna use it ...
 #   Convert to float, square and calculate the root 
 #    samples_new = sqrt(samples.astype(np.float32)**2 )
