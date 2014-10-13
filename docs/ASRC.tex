@@ -4,7 +4,7 @@ chapterprefix = false, toc=listof, ngerman, parskip=half]{scrartcl} % doppelseit
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\usepackage{D:/Daten/HM/tex/dsvFPGA_ueb_style_v3}
+\usepackage{D:/Daten/tex/dsvFPGA_ueb_style_v3}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %\includeonly{2010-DSP_FPGA-Ueb_Kap_1_2}
@@ -68,28 +68,38 @@ pdftitle={Asynchronous Sample Rate Conversion},
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \setcounter{topnumber}{3} % max. Anzahl von Gleitobjekten im oberen Teil der Seite
 
-\section{Worum geht's?}
-Das Prinzip der Interpolation ist jedem bekannt, der in einer Tabelle einmal versucht hat "`zwischen den Zeilen"'
-zu lesen, also Zwischenwerte aus den gegebenen Tabellenwerten abzuleiten: Interpolation erzeugt eine kontinuierliche Funktion aus einer einer Menge von diskreten Stützstellen. Sie ist an jedem Punkt auswertbar und stimmt an den Stützstellen mit diesen (exakt oder näherungsweise) überein. Man kann einen Interpolator also auch als Filter mit zeitdiskreter Eingangsfolge und zeitkontinuierlichem Ausgangssignal betrachten.
+\section{Überblick}
+Mit dem Siegeszug der digitalen Signalverarbeitung stellte sich rasch das stellte sich rasch das Problem, Mess-, Audio-, Foto- und Videoformaten zwischen verschiedenen Abtastraten (bzw. Auflösungen bei Fotos und Videos) möglichst verlustarm zu konvertieren. Diese Problematik ist eng verwandt mit Techniken der \textit{Interpolation}, also der Problemstellung zu einer Reihe von Zahlenwerten verlässliche Zwischenwerte zu ermitteln. \cite{Meijering2002} beschreibt die lange Geschichte der Interpolation von der Antike bis in das 20. Jahrhundert und ordnet sie so in einen größeren Kontext ein.
 
-Das ist in der digitalen Signalverarbeitung in vielen Anwendungen von großem Wert. Die Buchstaben dieses Textes
-liegen auf dem Rechner beispielsweise nur in Form einiger diskreter Punkte vor. Mit diesen an sich kann noch
-nichts dargestellt werden - erst durch Spline-Interpolation bekommen diese ihre Form. Der große Vorteil speichern
-ist offensichtlich: Die Lage von nur 20 Punkte im Raum zu speichern ist wesentlich effizienter als ein Bild für jede
-erdenkliche Au?ösung.
-Interpolation, also die Problemstellung aus einer Reihe von Zahlenwerten verlässliche Zwischenwerte zu ermitteln, hat eine lange Geschichte. \cite{Meijering2002} beschreibt z.B. die Geschichte der Interpolation von der Antike bis in das 20. Jahrhundert und ordnet sie so in einen größeren Kontext ein.
+Eine ingenieurnahe Weise diesen Prozess zu betrachten ist: Interpolation erzeugt eine kontinuierliche Funktion aus einer Anzahl von diskreten Stützstellen. Diese Funktion ist an jedem Punkt auswertbar und stimmt an den Stützstellen mit diesen exakt (ZOH, lineare, quadratische, kubische Interpolation) oder näherungsweise (Spline-Interpolation) überein. Man kann einen Interpolator also auch als Filter mit zeitdiskreter Eingangsfolge und zeitkontinuierlichem Ausgangssignal betrachten (dem dann die neuen Werte zu den gewünschten Zeitpunkten entnommen werden). Allerdings ist diese Betrachtung des Resampling Prozesses in der \textit{Zeitebene} für Audiosignale suboptimal, eine Darstellung der o.g. Interpolationsalgorithmen in der Frequenzebene führt für Interpolatoren höherer Ordnung (Spline, kubisch) zu komplizierten Ausdrücken.
 
-Mit dem Siegeszug der digitalen Signalverarbeitung tat sich ein riesiges neues Einsatzfeld für die Interpolation auf: Die Abtastrate von Mess- und Audiodaten musste geändert werden, die Auflösung von digitalen Bildern konvertiert werden. Julius O. Smith's "`Digital Audio Resampling Home Page"' (\url{https://ccrma.stanford.edu/~jos/resample/resample.html}, auch als pdf)
+Dieses Paper fokussiert sich auf \textit{Real-Time Abtastratenwandlung von Audiosignalen} in Software und Hardware, also \textit{bandbegrenzten} Signalen. 
 
-Der Schwerpunkt dieses Artikels liegt auf der synchronen und asynchronen Abtastratenwandlung und deren Implementierung in Soft- und Hardware.
+Weitere wichtige Aspekte sind dabei die effiziente Implementierung von Interpolation sowie Verfahren/Metriken, die Qualität der Ausgangssignale zu bewerten.
 
-\cite{Lokken2005} unterscheidet zwischen "`arbitrary sample rate conversion"' und "`asynchronous arbitrary sample rate conversion"'
+Für Audiosignale ist es u.U. sinnvoller, sich dem Thema direkt in der Frequenzebene zu nähern. Diesen Ansatz verfolgen 
 
-\textbf{ASRC} ist 
-Literatur:\\
+\textbf{Julius O. Smith} mit ("`Simulated Analogue Filter Method"'), "`Digital Audio Resampling Home Page"' (\url{https://ccrma.stanford.edu/~jos/resample/resample.html}, auch als pdf). Das Skript zur Vorlesung findet sich in \cite{Smith2011}. 
+
+Ein weiteres gutes Skript zu xxx ist von \cite{Babic}. Unter \cite{Lehtinen2004} findet sich eine interessante Gegenüberstellung unterschiedlicher Modelle von Interpolationsfiltern. In \cite{Schafer1973} gibt Ronald Schafer schließlich eine gute Übersicht über Interpolation in der Signalverarbeitung, Abtastratenkonvertierung, Lagrange Interpolatoren und über den Entwurf von FIR Interpolationsfiltern.
+
+\textbf{Evangelista} hat in seiner Dissertation \cite{Evangelista2000} ein mathematisches Modell für Abtastratenwandler vorgestellt und der Entwurf von Interpolatoren behandelt, immer mit Blick auf die Implementierbarkeit. Die Herangehensweise ist dabei (nur) so mathematisch wie es die Thematik erfordert und nicht unbedingt für den Einstieg geeignet.
+
+\cite{Lokken2005} unterscheidet zwischen "`arbitrary sample rate conversion"' (ASRC) und "`asynchronous arbitrary sample rate conversion"' (AASRC), Evangelista redet von Generalized Arbitrary Sample Rate Conversion.
+
+\begin{infobox}
+\begin{description}
+\item [Sample Rate] (Abtastrate) die Rate, mit der ein zeitdiskretes Signal vorliegt
+\item [Upsampling] Erhöhen der Abstastrate um einen ganzzahligen Faktor, die fehlenden Samples werden durch Null gefüllt (zero-stuffing) oder durch Wiederholen des letzten Werts (Zero-Order Hold). Dabei entstehen Kopien des ehemaligen Basisbands bis zur neuen -> Nyquistfrequenz, sog. -> Images, die durch Anti-Image Filter entfernt werden müssen. 
+\item [Downsampling] Verringerung der Abtastrate um einen ganzzahligen Faktor durch Weglassen von Abtastwerten. Ohne vorherige Bandbreitenbegrenzung (Anti-Alias Filterung) besteht die Gefahr von -> Aliasing.
+\item [Resampling]
+\item [Synchron] wenn sich das Verhältnis von zwei Abtastraten durch ein einfachen Bruch ausdrücken lässt, z.B. beim Resampling von 44.1kHz nach 48kHz, 44.1/48 = 147 / 160 .
+\item [Asynchron] wenn die zwei Abtastraten kein einfaches rationales Verhältnis haben
+\end{description}
+\end{infobox}
 
 \begin{description}
-\item [JOS] 
+
 \item [Uri Nieto] Audio Resampling in Python, \url{http://urinieto.com/2011/05/audio-resampling-in-python/}
 \end{description}
 
@@ -106,6 +116,40 @@ Literatur:\\
 
 \section{Simulation und Modellierung}
 
+\section{Bewertung der Qualität}
+Übliche Maßzahlen zur Bewertung der Qualität eines Abtastratenwandlers sind:
+\begin{description}
+\item [Signal-to-Noise Ratio (SNR):] Eine Maßzahl dafür, wieviel Störungen der Umwandlungsprozess dem Signal hinzufügt (gemessen in dB). 
+\item [Bandbreite:] Tiefpassfilterung ist ein unvermeidlicher Bestandteil jeder Ratenwandlung; abhängig von der Ordnung des verwendeten Filters wird dabei das Signalband mehr oder weniger stark beschnitten.
+\item [Geschwindigkeit / Rechenaufwand:] Vor allem für Real-Time Anwendungen ist ein minimaler Rechenaufwand essenziell.
+\end{description}
+
+Bei den meisten Verfahren zur Abtastratenwandlung hängt die Qualität ab von der Frequenz des Eingangsssignals und dem Verhältnis zwischen Eingangs- und Ausgangsabtastrate.
+    
+
+Das Infinite Wave Masteringstudio hat unter \url{http://src.infinitewave.ca/} einen sehr umfassenden Vergleich verschiedener ASRC Softwareimplementierungen in Betriebssystemen und Audio-Software bereit gestellt. Unter Help finden sich viele nützliche Informationen. Die Implementierungen wurden bewertet nach
+
+\begin{description}
+\item [Verzerrungen und Aliasing:] Mit Hilfe eines Sweeps zwischen 0 und 48 kHz sieht man schnell, welches Maß an Verzerrungen und Aliasing bei welchen Eingangsfrequenzen auftritt. Mit einem 1~kHz Testtons bei -0.1~dBFS und -60~dBFS sieht man detailliert, bei welchen Frequenzen Verzerrungen anfallen und wo Quantisierungseffekte auftreten.  
+\item [Frequenzgang im Pass- und Stoppband:] Eine ungenügende Dämpfung im Stoppband führt zu Aliasing, Variationen im Passband beeinflussen das Nutzsignal.
+\item [Impulsantwort:] Der Impulsantwort kann man entnehmen, wie steilbandig das Filter ist (starkes Ringing), ob das Filter linearphasig ist (konstante Gruppenlaufzeit) oder minimalphasig (geringes Pre-Ringing). Nicht-linearphasige Filter können die Lokalisierbarkeit von Audioquellen beeinträchtigen, minimalphasige Filter haben dafür weniger Einschwingen / Klingeln vor dem eigentlichen Audio-Event (z.B. Snare-Schlag). 
+\item [Phasengang / Gruppenlaufzeit:] Aus dem Phasengang kann man ähnliche Ergebnisse ableiten wie aus der Impulsantwort.
+\item [SNR] wurde hier nicht verglichen, diese Maßzahl ist für sich auch nicht besonders aussagekräftig.
+\end{description}
+
+\begin{figure}
+\centering
+\subfigure[]{
+\includegraphics[width = 0.45 \linewidth]{infinitewave_burner16_sweep}
+}
+\subfigure[]{
+\includegraphics[width = 0.45 \linewidth]{infinitewave_burner16_1kHz}
+}
+
+\caption{Performance eines Sample Rate Converter bei der Umwandlung 96~kHz -> 44.1~kHz, (a) sine chirp, (b) 1~kHz sine}
+\label{fig:SRC_comparison}
+\end{figure}
+
 %\begin{figure}[ht]
 %\centering
 %\includegraphics[width = 0.8\textwidth]{ueb-PY-git-local-remote}
@@ -113,16 +157,7 @@ Literatur:\\
 %\label{fig:Py-git-local-remote}
 %\end{figure}
 
-\begin{infobox}
-\begin{description}
-\item [Sample Rate] (Abtastrate) die Rate, mit der ein zeitdiskretes Signal vorliegt
-\item [Upsampling] Erhöhen der Abstastrate um einen ganzzahligen Faktor, die fehlenden Samples werden durch Null gefüllt (zero-stuffing) oder durch Wiederholen des letzten Werts (Zero-Order Hold). Dabei entstehen Kopien des ehemaligen Basisbands bis zur neuen -> Nyquistfrequenz, sog. -> Images, die durch Anti-Image Filter entfernt werden müssen. 
-\item [Downsampling] Verringerung der Abtastrate um einen ganzzahligen Faktor durch Weglassen von Abtastwerten. Ohne vorherige Bandbreitenbegrenzung (Anti-Alias Filterung) besteht die Gefahr von -> Aliasing.
-\item [Resampling]
-\item [Synchron] wenn sich das Verhältnis von zwei Abtastraten durch ein einfachen Bruch ausdrücken lässt, z.B. beim Resampling von 44.1kHz to 48kHz, 44.1/48 = 147 / 160 .
-\item [Asynchron] wenn die zwei Abtastraten kein einfaches rationales Verhältnis haben
-\end{description}
-\end{infobox}
+
 
 \section{Literatur}
 
@@ -137,20 +172,10 @@ Da das Konzept der Interpolation in den verschiedensten Zusammenhängen verwendet
 
 \vspace{1mm}
 
-\subsection*{Übersichtswerke}
-
-Die beste und fundierteste Arbeit fand ich in \cite{Evangelista2000}. In der Dissertation wird ein mathematisches Modell für Abtastratenwandler vorgestellt und der Entwurf von Interpolatoren behandelt. Die Herangehensweise ist dabei so mathematisch wie es die Thematik erfordert. Daher ist die Arbeit für einen Einstieg eher nicht geeignet. Ich könnte erst jetzt, zum Ende meiner Beschäftigung, damit arbeiten.
-
-Steven Smith, bekannt für seine frei im Internet verfügbaren Bücher, hält seit 
-kurzem (2011) eine Vorlesung zur Thematik. Das Skript findet sich in \cite{Smith2011}. Ein weiteres gutes Skript von einem anderen Autor findet sich in \cite{Babic}. Unter \cite{Lehtinen2004} findet sich eine interessante Gegenüberstellung unterschiedlicher Modelle von Interpolationsfiltern. In \cite{Schafer1973} gibt Ronald Schafer schließlich eine
-gute Übersicht über Interpolation in der Signalverarbeitung, Abtastratenkonvertierung, Lagrange Interpolatoren und über den Entwurf von FIR Interpolationsfiltern.
-
 \subsection*{Interpolationstheorie}
 
-Zum Verständnis der Interpolatoren ein umfassenderes Verständnis nötig war, als in meinem Studium vermittelt 
-wurde. Ich machte mich daher auf, allgemein-gültigere Definitionen der Interpolation zu finden. In \cite{Pinkus} geht es um die  Anfänge der Approximationstheorie nach Weierstraß. In \cite{Fomel2000} fand ich zum ersten Mal
-eine funktionanalytische Beschreibung der Interpolation mithilfe von Basisfunktionen - eine Herangehensweise, die zum Verständnis der Interpolation
-mittels B-Splines wichtig ist.
+In \cite{Pinkus} geht es um die  Anfänge der Approximationstheorie nach Weierstraß. In \cite{Fomel2000} fand ich zum ersten Mal
+eine funktionanalytische Beschreibung der Interpolation mithilfe von Basisfunktionen - eine Herangehensweise, die zum Verständnis der Interpolation mittels B-Splines wichtig ist.
 
 \subsection*{Interpolatoren}
 
@@ -189,7 +214,7 @@ zu beschäftigen. \cite{Heinzel2002} gibt zu beiden Themen eine gute Übersicht. D
 von Fenstern. Unter \cite{Hoffmann2007} findet sich eine ausführliche Erklärung des Zusammenhangs zwischen Leistungsdichte-Spektrum und Leistungs-Spektrum im Spectrum-Scope
 Block von Simulink, und in \cite{Narcowich1998} wird die Fourier-Transformierte einer Funktion durch die DFT approximiert.
 \newpage
-\bibliographystyle{D:/Daten/HM/tex/bib/amsalpha_initial} % Choose style for bibliography
+\bibliographystyle{D:/Daten/tex/bib/amsalpha_initial} % Choose style for bibliography
 \bibliography{asrc}
 \end{document}
 
