@@ -1,0 +1,100 @@
+\documentclass[11pt]{article}
+\usepackage{anysize}
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\newcommand{\code}[1] {\texttt{#1}}
+
+\marginsize{1cm}{1cm}{1cm}{1cm}
+\thispagestyle{empty}
+\pagestyle{empty}
+
+
+\begin{document}
+\bibliographystyle{abbrv}
+
+\setlength{\parindent}{0ex}
+
+\begin{center}
+\section*{Abtastratenwandlung und Interpolation}
+\subsection*{Abschluss-Bericht}
+Florian Thevißen, München, August 2012
+\end{center}
+\vspace{.5cm}
+
+\section{Einführung}
+
+Im Zeitraum vom 15.05.2012 bis 30.08.2012 war ich an der Hochschule München im Labor für Schaltungstechnik und Signalverarbeitung bei Herrn Professor Dr. Christian Münker und Dipl.Ing. Josef Klugbauer als wissenschaftlicher Mitarbeiter beschäftigt. Meine Aufgabe bestand im wesentlichen darin, im Rahmen eines Drittmittelprojekts bei der Weiterentwicklung eines in Hardware realisierten Abtastratenwandlers mitzuwirken. Das Labor verfügte zu Beginn meiner Tätigkeit dazu nicht über die benötigten Kenntnisse, so dass es zu meiner Aufgabe wurde,
+
+\begin{enumerate}
+	\item{mich in die Theorie der Abtastratenwandlung und Interpolation einzuarbeiten,}
+	\item{meine Erkenntnisse zu dokumentieren und an Diskussionen teilzunehmen, und}
+	\item{die Arbeit des Herrn Klugbauer durch Simulationen in \emph{Python} zu unterstützen.}
+\end{enumerate}
+
+An den Erfahrungen, die ich mit der Programmiersprache \emph{Python} dabei sammeln würde, war das Labor dabei besonders interessiert, da Python eine mögliche, kostengünstige Alternative zur teuren Software \emph{Matlab} ist.\\
+\\
+In diesem Bericht soll der zeiliche Verlauf des Projekts dokumentiert werden.
+
+\section{Einarbeitung}
+
+Ein zentraler Punkt der Abtastratenwandlung ist die Interpolation. Wird die Abtastrate eines Signals erhöht, werden Zwischenwerte benötigt. Diese werden mithilfe verschiedener Methoden aus den bestehenden Werten ermittelt. Da die numerische Analysis in meinem Studium kein Schwerpunkt war, arbeitete ich mich zunächst in die klassische Interpolationstheorie, wie Sie in den Vorlesungen heute üblicherweise behandelt wird, ein. \\
+\\
+Dabei fiel es mir zunächst schwer, die Theorie auf das Problem der Abtastratenwandlung zu übertragen, denn Signale kommen in der numerischen Analysis nicht vor. Mir nun Möglichkeiten zu überlegen, wie die klassische Interpolationstheorie auf Signale anwendbar sein könnte, schien mir zu diesem Zeitpunkt dabei nicht der richtige Weg zu sein. Ich ließ diese Theorie daher zunächst beiseite, und wandte mich den Methoden der Multiraten-Signalverarbeitung zu, deren fester Bestandteil die Abtastratenwandlung um einen ganzzahligen Faktor war. \\
+\\
+Ich implementierte daraufhin einfache Abtastratenwandler in Python, um Erfahrungen in der Anwendung der Methoden zu sammeln. Durch das Einfügen von Nullen (\code{Utilities.zero\_stuff\_signal(x, N)}), und anschließendem Entfernen der Images mit einem FIR-Filter, erhöhte ich die Abtastrate einer Folge um einen ganzzahligen Faktor (\code{downsampling.py}). Anschließend experimentierte ich mit selbstgeschriebenen Algorithmen zur Nearest-Neighbour Interpolation (ZOH) und linearer Interpolation (FOH). Nebenbei entstand das \code{Utilities} Modul, in das ich nützliche Funktionen integrierte (siehe z.B. \code{Utilities.plotMagSpectrum2(...)} zum Plotten des Spektrums zeitdiskreter Signale in einem Frequenzbereich).\\
+\\
+
+\section{Implementierung eines Farrow-Filters}
+
+Ich arbeitete zu diesem Zeitpunkt viel mit dem Buch von Fredric Harris \cite{Harris2004}. In mir kam der Verdacht auf, dass ein Farrow-Filter die Brücke zwischen den klassischen Interpolationsmethoden und der Signalverarbeitung schließen würde, begriff allerdings die Theorie noch nicht ausreichend um diesen Verdacht auch belegen zu können. Ich entschied mich dazu das Filter in Python nachzubilden, um es besser zu verstehen. Nebenbei würde auch ein simulationsfähiges Modell entstehen, an dem eventuell weitere Untersuchungen möglich wären. Der Aufwand schien mir gerechtfertigt.\\
+\\
+Der Farrow-Filter schien mir eine Verallgemeinerung eines Polyphasen-Filters zu sein. Deren Strukturen waren mir noch fremd, so dass ich den Plan fasste, zunächst ein solches zu implementieren, und dieses dann in ein Farrow-Filter hin zu verallgemeinern. Weil eine sample-basierte Beschreibung benötigt wurde, war die Entwicklung aufwändiger als ich anfangs dachte. Durch die unterschiedlichen Abtastraten ergaben sich immer wieder Überlauf- und Indizierungsprobleme in den Algorithmen, die ich deshalb einige Male neu schreiben musste. \\
+\\
+Als die Klasse dazu fertig war (\code{PolyphaseFilter.py}), war mir die Funktionsweise bis ins kleinste Detail vertraut. Ich machte mich auf zur Implementierung des Farrow-Filters. Dieser entnahm, wie ich jetzt verstand, die Koeffizienten nicht aus der Polyphasen-Dekomposition, sondern berechnete diese in Abhängigkeit des Zeitpunkts aus der abschnittweisen polynomialen Approximation einer kontinuierlichen Impulsantwort.\\
+\\
+Ich benötigte also eine Beschreibung einer kontinuierlichen Impulsantwort mittels abschnittsweise definierter Polynomen. Dabei stellt sich unweigerlich die Frage, aus welchen Stützstellen die Polynome denn erzeugt werden sollten. Wie ich später noch lernen sollte, ist dies einer der entscheidenden Punkte beim Entwurf von Interpolatoren. Fredric Harris nahm dazu die Koeffizienten eines FIR-Filters, und ich tat es ihm gleich. Es enstanden so in der FarrowFilter Klasse eine Reihe von Funktionen, die der Erzeugung und Auswertung der Polynome dienen. Das Filter funktionierte schließlich (\code{FarrowFilter.py}). Es war damit eine Abtastratenwandlung um einen nicht ganzzahligen Faktor möglich. \\
+\\
+Ich hatte allerdings noch kein in sich stimmiges Modell der Abtastratenwandlung, und so auch keine Ideen, wie der Abtastratenwandler verbessert werden konnte. Der Farrow-Filter funktionierte einfach, und ich konnte nur ahnen warum. Dies war am Tag vor der Diskussion im Labor mit Herrn Münker, Herrn Klugbauer und Herrn Zeller.\\
+\\
+
+\section{Interpolationstheorie}
+
+Ich machte mich ein zweites Mal auf in die Literatur und IEEExplore. Stück für Stück fand ich wichtige Antworten:
+
+\begin{itemize}
+	\item Resampling einer Folge äquidistanter Samples entspricht der Filterung der Folge mit einem zeitkontinuierlichen FIR Filter (Interpolator) und Abtastung des zeitkontinuierlichen Signals
+	\item Bei der Abtastung kommt es zu Aliasing (vgl. der Zusammenhang zwischen Sinc und Dirichlet) 
+	\item Die Komponenten Interpolator und Abtaster legen bestimmen im Zusammenspiel den Frequenzgang des Wandlers fest
+	\item Die Abtastung des zeitkontinuierlichen Signals kann als Abtastung der Impulsantwort des Interpolators formuliert werden. Darauf fußt das Prinzip des Farrow-Filters.
+	\item Bei einem Polyphasen-Filter sind die Abtastwerte der Impulsantwort immer dieselben, so dass keine Approximationen nötig sind.
+\end{itemize}
+
+Ich fing an, diese Zusammenhänge aufzubereiten, und in einem „Paper“ zusammenzufassen. Dabei fiel mir aber auf, dass die ganze Problematik der Abtastratenwandlung eigentlich differenzierter betrachtet werden sollte. Denn einen Interpolator zu entwerfen war etwas anderes als einen Abtastratenwandler, für den ein Interpolator benötigt wird. Ich teilte mein „Paper“ daher auf, widmete eines den Interpolatoren an sich, und das andere dem Entwurf von Abtastratenwandlern.
+Ganz „Bottom-Up“ fing ich mit dem Paper über Interpolatoren an, und sollte bei diesem für den Rest meiner Arbeit auch bleiben.\\
+\\
+Ich fand weiter heraus, dass jede der bekannten Interpolationsarten für den Fall der Interpolation 0. und 1. Ordnung gegen die bekannte Zero-Order-Hold bzw. lineare Interpolation (First-Order-Hold) konvergiert. Erst wenn mehrere Samples zur Berechnung des Wertes an einem Punkt herangezogen werden, ergeben sich Unterschiede zwischen den Methoden. Desweiteren entdeckte ich die allgemeine mathematische Beschreibung der Interpolation mithilfe kardinaler Basisfunktionen. So fand ich zurück zur „idealen bandbegrenzten Interpolation“ nach Shannon – einem der Ausgangspunkte meiner Untersuchungen.\\
+\\
+Ich war mir zu dieser Zeit unschlüssig inwieweit ich mich tiefer in die Materie einarbeiten sollte. In einer Diskussion bekundete Herr Münker Interesse an Interpolations-Methoden höherer Ordnung, und vor allem wie diese in einem Interpolator verwendet werden könnten. Ich beschäftigte mich daraufhin intensiv mit der Interpolation nach Lagrange und mittels B-Splines, und studierte einschlägige Papers im Detail. Das Ziel war, die Impulsantwort bzw. den Frequenzgang der Interpolatoren zu bestimmen. Leider gelang mir das bei keinen der beiden Methoden. Ich fand, dass der Anspruch der Papers an meine Zeit und Fähigkeiten überstieg, und dass es mir nicht möglich sein würde die Materie ausreichend gut zu durchdringen. Die einschlägige Literatur half mir auch nicht, denn die Thematik wird dort entweder nicht in ausreichendem Tiefgang behandelt, es werden nur Formeln präsentiert, oder es wird gar nur aus den genannten Papers abgeschrieben. Ich kam nicht mehr weiter.\\
+\\
+
+\section{Modellierung des Abtastratenwandlers, SNR}
+
+Das Ende meiner Beschäftigung zeichnete sich zu diesem Zeitpunktbereits ab. Ich beendete daher meinen theoretischen
+Exkurs, und versuchte Herrn Klugbauer noch so gut es ging bei der Weiterentwicklung des Wandlers zu helfen. Ich nahm mir vor den Wandler in Python nachzubauen, und dieses Modell als Startpunkt für weitere Entwicklungen zu nehmen. 
+Ich beschrieb einige Systeme (\code{Multirate\_systems.py}), war mir allerdings nicht sicher ob das System, das den bestehenden Wandler beschreiben sollte, wirklich mit diesem identisch war. Ich nahm mir daher vor, zunächst einmal festzustellen ob der SNR und der Plot des Leistungsspektrums übereinstimmt. Ich fing an eine Testbench dazu zu schreiben. \\
+\\
+Diese zu entwickeln war aufwendiger als vermutet. Der erste Schritt war, am Ausgang des Wandlers eine kohärente Spektralanalyse durchzuführen. Das Spektrum könnte dann begutachtet, und über das Theorem von Parseval der SNR errechnet werden. Es galt also, den Leakage Effekt zu vermeiden, bei dem sich die Leistung des Nutzsignals im Leistungs-Spektrum auf mehrere Bins verteilt. Ich schrieb meine Testbench so, dass mit ihr die Analyse jedes Multiraten-Systems möglich war. Ich fand jedoch, dass bei manchen Systemen der Leakage-Effekt vermieden werden konnte, in anderen Fällen jedoch nicht. Mir gelang es leider nicht, die Gründe dafür herauszufinden, und verfolgte zwischenzeitlich einen anderen Ansatz zur Bestimmung des SNRs (siehe später). Ich begnügte mich schließlich damit, dass unser Modell des Abtastratenwandlers zumindest mit meiner Testbench kohärent analysiert werden konnte.\\
+\\
+Als die Testbench fertig war, zeigte sich im Plot des Spektrums ein weiteres Problem. Das Eingangssignal verursachte zwar nun kein Leakage mehr, wohl aber die durch die Wandlung "`zurückgefalteten"' Images. Der Leakage Effekt durch diese Images war so stark, dass das Spektrum in Nutzband vollständig verdeckt wurde. Der SNR im Nutzband konnte daher so nicht bestimmt werden. Eine Tiefpaß-Filterung zur Unterdückung der Images ausserhalb des Nutzbands verringerte diesen Effekt, vermeiden ließ er sich allerdings nicht. Herr Münker traute dem so ermittelten SNR nicht, und schlug eine Fensterung des Ausgangssignals vor, um die Auswirkungen des Leakage-Effekts der Images zu reduzieren. Ich verbrachte die mir verbliebene Zeit nun damit, herauszufinden wie sich die Fensterung auf die Signal- und Rauschleistung auswirkt, und welche Gewichtungsfaktoren im Frequenzbereich zur Berechnung der Leistungen nötig waren. Leider war die Theorie dahinter involvierter als erwartet, und so gelang mir dies das leider nicht mehr.\\   
+\\
+Zwischenzeitlich versuchte ich den SNR im Zeitbereich zu bestimmen. Die Idee war, das Nutzsignal durch Subtraktion eines in Betrag und Phase angepassten "idealen" Signals aus dem Ausgangssignal zu entfernen, und daraus die Störleistung zu bestimmen. Damit war eine Reduktion des Nutzsignals von ca. 105dB möglich, was zwar sehr gut, aber für das System leider gerade nicht ausreichend war. Ausserdem war Herr Münker der Meinung, dass man sich zunächst an gebräuchliche Messmethoden orientieren sollte, bevor man eigene entwickelt. \\
+\\
+
+
+\bibliography{jabref}
+
+
+\end{document}
+

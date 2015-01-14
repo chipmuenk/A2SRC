@@ -1,0 +1,107 @@
+\documentclass[11pt]{article}
+\usepackage{anysize}
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{url}
+%\usepackage[sorting=none]{biblatex}
+
+\newcommand{\code}[1] {\texttt{#1}}
+
+\marginsize{1cm}{1cm}{1cm}{1cm}
+\thispagestyle{empty}
+\pagestyle{empty}
+
+
+\begin{document}
+
+\bibliographystyle{ieeetr}
+%\bibliographystyle{unsrt}
+
+\setlength{\parindent}{0ex}
+
+\begin{center}
+\section*{Abtastratenwandlung und Interpolation}
+\subsection*{Quellenübersicht}
+Florian Thevißen, München, August 2012
+\end{center}
+\vspace{.5cm}
+
+\subsection*{Einführung}
+
+In diesem Dokument soll eine Übersicht über die Quellen gegeben werden, die sich während meiner Arbeit an der Weiterentwicklung
+eines Abtastratenwandlers auf einem FPGA als besonders relevant herausgestellt hatten. Ich möchte die Quellen insbesondere auch etwas
+ordnen, denn ich fand, dass im Umfeld der Abtastratenwandlung zwischen vermeintlich ähnlichen, aber doch unterschiedlichen
+Konzepten häufig nicht unterschieden wird. Ich glaube, dass dies, neben der extrem dürftigen Behandlung in der Literatur, einer 
+der wesentlichen Gründe dafür ist, dass der Einstieg in die Thematik als so mühsam empfunden wird. \\
+\\
+Zwischen den folgenden Konzepten sollten meiner Meinung nach unterschieden werden:
+
+\begin{quote}\begin{description}
+	\item[Interpolator:] Ein Filter mit diskreter Eingangsfolge und zeitkontinuierlicher Ausgangsfolge
+	\item[Fractional-Delay-Filter:] Ein Interpolator, aus dessen kontinuierlichem Ausgangssignal nur ein Wert entnommen wird  
+	\item[Interpolationsfilter:] Filter zum Entfernen der Images bei Aufwärtstastung um einen ganzzahligen Faktor
+	\item[Effiziente Strukturen:] Polyphasen-Filter, Farrow-Filter 
+	\item[Abtastratenwandler:] Systeme bestehend aus Auf- bzw. Abwärtstastern, Filtern und/oder Interpolatoren
+\end{description} \end{quote} 
+
+\vspace{1mm}
+
+\subsection*{Übersichtswerke}
+
+Die beste und fundierteste Arbeit fand ich in \cite{Evangelista2001}.  In der Dissertation wird ein mathematisches Modell für Abtastratenwandler vorgestellt
+und der Entwurf von Interpolatoren behandelt. Die Herangehensweise ist dabei so mathematisch wie es die Thematik erfordert.
+Daher ist die Arbeit für einen Einstieg eher nicht geeignet. Ich könnte erst jetzt, zum Ende meiner Beschäftigung, damit arbeiten.\\ Steven Smith, bekannt für seine frei im Internet verfügbaren Bücher, hält seit 
+kurzem (2011) eine Vorlesung zur Thematik. Das Skript findet sich in \cite{Smith2011}. Ein weiteres gutes Skript von einem anderen Autor findet sich in \cite{Babic}. Unter \cite{Lehtinen2004} findet sich eine
+interessante Gegenüberstellung unterschiedlicher Modelle von Interpolationsfiltern. In \cite{Schafer1973} gibt Ronald Schafer schließlich eine
+gute Übersicht über Interpolation in der Signalverarbeitung, Abtastratenkonvertierung, Lagrange Interpolatoren und über den Entwurf von FIR Interpolationsfiltern.
+
+\subsection*{Interpolationstheorie}
+
+Ich fand, dass zum Verständnis der Interpolatoren ein umfassenderes Verständnis nötig war, als in meinem Studium vermittelt 
+wurde. Ich machte mich daher auf, allgemein-gültigere Definitionen der Interpolation zu finden. Unter \cite{Meijering2002} fand ich einen
+gut geschriebenen Artikel über die Geschichte der Interpolation von der Antike bis in das 20. Jahrhundert. Diese Einordnung in einen größeren Kontext fand ich sehr 
+lehrreich. In \cite{Pinkus} geht es um die  Anfänge der Approximationstheorie nach Weierstraß. In \cite{Fomel2000} fand ich zum ersten Mal
+eine funktionanalytische Beschreibung der Interpolation mithilfe von Basisfunktionen - eine Herangehensweise, die zum Verständnis der Interpolation
+mittels B-Splines wichtig ist.
+
+\subsection*{Interpolatoren}
+
+Zum Entwurf von Lagrange Interpolatoren erfährt man etwas in \cite{Schafer1973} und \cite{Ye2003}. Eine gute Übersicht über 
+B-Splines gibt Michael Unser in seinen Papers, z.B. zum Einstieg in das Thema in \cite{Unser1999}, oder in \cite{Unser1993c} und \cite{Unser1993b}. Der Zusammenhang
+zwischen kardinalen B-Splines und deren Konvergenz gegen den idealen bandbegrenzten Interpolator wird in \cite{Aldroubi1992} behandelt. 
+Auch in der vorhin bereits erwähnten Dissertation \cite{Evangelista2001} steht etwas zum Entwurf von Interpolatoren.
+
+\subsection*{Implementierung von Interpolatoren}
+
+Zur Implementierung eines Interpolators auf einem FPGA ist eine Abbildung der Theorie auf eine effiziente Hardware-Struktur nötig. In seinem Buch behandelt Fredric-Harris
+einige Aspekte der Implementierung von Polyphasen- und Farrow-Filtern in Hardware \cite{Harris2004}.
+In \cite{Smith1993} entwickelt Steven Smith eine an der Praxis orientierte Methode, ideale bandbegrenzte Interpolation zu approximieren und mit 
+Lookup-Tables zu implementieren. \cite{Farrow1988} ist das berühmte Paper von C. Farrow, in dem er das Farrow-Filter zur effizienten Implementierung
+von polynomialen Filtern vorstellt. In \cite{Nit2009} wird ein Fractional-Delay-Filter auf einem FPGA in einer aufwandsarmen Struktur realisiert. 
+In \cite{Unser1993b} behandelt Michael Unser die Implementierung von B-Spline Interpolatoren. In \cite{Francesconi1993} und \cite{Francesconi1993a}
+wird eine Struktur von Lagrange Interpolatoren vorgestellt, die ohne Multiplizierer auskommt.
+
+\subsection*{Anwendungen von Interpolatoren}
+
+Interpolatoren kommen nicht nur in Abtastratenwandlern zum Einsatz, sondern auch in der Bildverarbeitung \cite{Unser1995}, 
+und Medizintechnik \cite{Lehmann2001}. Sie werden auch dazu verwendet, um mit einer kontinuierlichen Form eines Signals zu rechnen
+ \cite{Babic}. In \cite{Niemitalo2001} findet sich ein sehr interessanter Vergleich verschiedener Polynom-Interpolatoren zum Resampling von überabgetasteten (oversampled)
+Audio Signalen.  
+
+\subsection*{Entwurf von Abtastratenwandlern}
+
+Ein Interpolator ist ein Teil-System eines Abtastratenwandlers. Er ist im einfachsten Falle ein Zero-Order-Hold. In \cite{Lokken2005} gibt Ivar Løkken 
+einen einfachen Einstieg in den Entwurf von mehrstufigen Wandlern mit Zero-Order-Hold, und in Grundzügen auch, mit First-Order-Hold Interpolatoren. In \cite{Crochiere1981}
+geht es um Ähnliches. Unter \cite{infinitewave_a} finden sich interessante Tests verschiedener Wandler. 
+
+\subsection*{FFT-basierte Spektralanalyse, Fensterung}
+
+Die Bestimmung des SNRs der von mir in Python modellierten Wandler machte es notwendig, mich im Detail mit FFT basierter Spektralanalyse, und der Fensterung von Signalen
+zu beschäftigen. \cite{Heinzel2002} gibt zu beiden Themen eine gute Übersicht. Das Paper von Fredric Harris unter \cite{Harris1978} ist das Standardwerk zum Einsatz 
+von Fenstern. Unter \cite{Hoffmann2007} findet sich eine ausführliche Erklärung des Zusammenhangs zwischen Leistungsdichte-Spektrum und Leistungs-Spektrum im Spectrum-Scope
+Block von Simulink, und in \cite{Narcowich1998} wird die Fourier-Transformierte einer Funktion durch die DFT approximiert.
+\newpage
+\bibliography{jabref}
+\end{document}
+
