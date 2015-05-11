@@ -384,7 +384,7 @@ def parseArgs(args):
     
     for key, value in zip(args[::2], args[1::2]):
         if not key.startswith('-'):
-            print 'Error parsing argument "%s"' % key
+            print ('Error parsing argument "%s"' % key)
             dieWithUsage()
         if key.lower() == '-i':
             inputfilename = value
@@ -416,7 +416,7 @@ def dieWithUsage():
     
     Description: Converts sampling frequency of input.wav from 48kHz to 44.1kHz and writes it into output.wav
     """
-    print usage
+    print(usage)
     sys.exit(1)
     
 '''
@@ -458,6 +458,6 @@ if __name__ == '__main__':
     wavfile.write(out_name, out_fr, out_data)
     
     # Print Results
-    print "File", out_name, "was successfully written" 
-    print "It took: %.2f seconds" % float(tm.time() - start_time)
+    print ("File", out_name, "was successfully written")
+    print ("It took: %.2f seconds" % float(tm.time() - start_time))
     
