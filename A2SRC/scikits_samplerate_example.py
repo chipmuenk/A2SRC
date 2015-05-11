@@ -2,7 +2,9 @@
 """
 Created on Sat Sep 27 13:29:51 2014
 
-@author: Christian Muenker
+Demonstration for the samplerate module that is wrapper around the 
+Secret Rabbit Code from Erik de Castro Lopo (http://www.mega-nerd.com/SRC/)
+offering high quality real-time resampling.
 """
 
 import numpy as np
