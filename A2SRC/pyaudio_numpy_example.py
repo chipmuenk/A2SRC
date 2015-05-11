@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import (figure, plot, stem, grid, xlabel, ylabel,
     subplot, title, clf, xlim, ylim)
 
-import my_dsp_lib_v6 as dsp
+import my_dsp_lib as dsp
 #------------------------------------------------------------------ v3line30
 # Ende der gemeinsamen Import-Anweisungen
 import pyaudio
@@ -61,7 +61,7 @@ wf_out.setparams((nchannels, sampwidth, framerate, CHUNK,
 ## Instantiate PyAudio + setup PortAudio system, print all available devices
 p = pyaudio.PyAudio()
 for i in range(p.get_device_count()):
-    print p.get_device_info_by_index(i)
+    print (p.get_device_info_by_index(i))
     
 # open a stream for reading or writing on the default audio device with 
 # the audio parameters copied from the wave file wf_in:
