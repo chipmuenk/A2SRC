@@ -4,10 +4,10 @@
 # interpolate_compare.py
 #
 # Interactive Jitter modulation of audio files and generated waveforms
-# 
+#
 # See http://stackoverflow.com/questions/6783194/background-thread-with-qthread-in-pyqt
 #
-# Generate UI-File using 
+# Generate UI-File using
 # pyuic4 -o ui_a2src.py ui_a2src.ui
 #
 # (c) 2014-Feb-04 Christian Münker - Files zur Vorlesung "DSV auf FPGAs"
@@ -48,14 +48,14 @@ from ui_a2src import Ui_MainWindow as GUI
 # DEFINES
 #==============================================================================
 
-      
+
 def memory_usage():
     # return the memory usage of the python process in MB
     process = psutil.Process(os.getpid())
     mem = process.get_memory_info()[0] / float(2 ** 20)
     return mem
 
-mem = [memory_usage()] # initialize list 
+mem = [memory_usage()] # initialize list
 
 ###############################################################################
 #
@@ -100,12 +100,12 @@ fr_len_o    = R * FR_LEN_I # length of one output data frame
 #rate_o  = R * SYNTH_RATE_I # output rate
 
 #------------------------------------------------------------------------------
-# Primary thread: Create the GUI and manage Qt signal & slots  
+# Primary thread: Create the GUI and manage Qt signal & slots
 # Variables used by the second thread are stored as instance variables in
 # self.sim
-    
+
 class JitterGUI(QtGui.QMainWindow, GUI):
-    def __init__(self, parent=None):        
+    def __init__(self, parent=None):
         super(JitterGUI, self).__init__(parent)
         self.setupUi(self)
         self.stop = False
@@ -114,27 +114,27 @@ class JitterGUI(QtGui.QMainWindow, GUI):
         self.setWindowTitle("Jitter Simulator")
 
         self.sim = JitterSim(self.lock, self)
-        
+
         self.setSynthParams()
         self.setModulationParams()
         self.setupAudio()
         self.sim.wavFileWrite = False
-        
-       
+
+
         """
-        LAYOUT      
+        LAYOUT
         """
         self.comboBoxInputType.clear()
         self.comboBoxInputType.addItem('WAV-File', 'file')
         self.comboBoxInputType.addItem('Record', 'record')
-        #self.comboBoxInputType.addItem('Synthetic', 'synth')
-        
+        self.comboBoxInputType.addItem('Synthetic', 'synth')
+
         self.comboBoxSignalType.clear()
         self.comboBoxSignalType.addItem('Sinusoidal', 'sine')
         self.comboBoxSignalType.addItem('Chirp', 'chirp')
         self.comboBoxSignalType.addItem('Rectangular', 'rect')
         self.comboBoxSignalType.addItem('Random', 'rnd')
-        
+
         self.comboBoxModulationType.clear()
         self.comboBoxModulationType.addItem('Passthrough', 'pass')
         self.comboBoxModulationType.addItem('None', 'none')
@@ -142,25 +142,25 @@ class JitterGUI(QtGui.QMainWindow, GUI):
         self.comboBoxModulationType.addItem('Sinusoidal', 'sine')
         self.comboBoxModulationType.addItem('Rectangular', 'rect')
         self.comboBoxModulationType.addItem('Random', 'rnd')
-        
+
         # ============== Signals & Slots ================================
         # GUI:
         self.pushButtonOpenReadFile.clicked.connect(self.openFile)
 #        self.pushButtonPlot.clicked.connect(self.plotError)
-    
+
 
         # This calls QThread.start() which in turn calls the sim.run() method
         # run() must not be called directly for threading
         self.pushButtonStart.clicked.connect(lambda: self.sim.start())
 #        self.pushButtonStart.clicked.connect(lambda: self.sim.run())
-        
+
         self.pushButtonStop.clicked.connect(self.sim.stop)
 
         self.checkBoxEnableModulation.clicked.connect(self.setModulationParams)
         self.comboBoxModulationType.activated.connect(self.setModulationParams)
         self.checkBoxModulationPhase.clicked.connect(self.setModulationParams)
         self.lineEditModulationFreq.editingFinished.connect(self.setModulationParams)
-        self.lineEditModulationAmp.editingFinished.connect(self.setModulationParams)        
+        self.lineEditModulationAmp.editingFinished.connect(self.setModulationParams)
 
         self.comboBoxSignalType.activated.connect(self.setSynthParams)
         self.lineEditSynthFreq.editingFinished.connect(self.setSynthParams)
@@ -168,7 +168,7 @@ class JitterGUI(QtGui.QMainWindow, GUI):
 
         self.checkBoxEnableStreamOut.clicked.connect(self.setupAudio)
         self.checkBoxEnableFileWrite.clicked.connect(self.setupAudio)
-        # Threads        
+        # Threads
 
     def setupAudio(self):
         """
@@ -184,7 +184,7 @@ class JitterGUI(QtGui.QMainWindow, GUI):
         print("Defaultin", defaultInIdx)
         for i in range(self.p.get_device_count()):
              deviceList.append(self.p.get_device_info_by_index(i))
-    
+
              print (deviceList[i])
              if deviceList[i]['maxInputChannels'] > 0:
                  if i == defaultInIdx:
@@ -192,18 +192,18 @@ class JitterGUI(QtGui.QMainWindow, GUI):
                      defaultInBoxIdx = self.comboBoxAudioIn.currentIndex()
                  else:
                      self.comboBoxAudioIn.addItem(deviceList[i]['name'], str(i))
-                     
+
 #                 self.comboBoxAudioIn.setItemData(str(i))
              else:
                  if i == defaultOutIdx:
                      self.comboBoxAudioOut.addItem('* '+deviceList[i]['name'], str(i))
                      defaultOutBoxIdx = self.comboBoxAudioOut.currentIndex()
                  else:
-                     self.comboBoxAudioOut.addItem(deviceList[i]['name'], str(i))   
+                     self.comboBoxAudioOut.addItem(deviceList[i]['name'], str(i))
         self.comboBoxAudioIn.setCurrentIndex(defaultInBoxIdx)
         self.comboBoxAudioOut.setCurrentIndex(defaultOutBoxIdx)
 #        print("Default Output Device : %s" % self.p.get_default_output_device_info()['name'])
-#        self.comboBoxAudioOut.addItems(deviceList)        
+#        self.comboBoxAudioOut.addItems(deviceList)
 
     def openFile(self):
         """
@@ -212,22 +212,22 @@ class JitterGUI(QtGui.QMainWindow, GUI):
 
         dlg=QtGui.QFileDialog( self )
 
-        self.sim.my_WAV_in_file = dlg.getOpenFileName(filter="WAV-Files (*.wav)\nAll files(*.*)", directory="D:/Daten/share/musi/wav", 
+        self.sim.my_WAV_in_file = dlg.getOpenFileName(filter="WAV-Files (*.wav)\nAll files(*.*)", directory="D:/Daten/share/musi/wav",
                 caption = "Open WAV File")
         self.sim.my_WAV_out_file = os.path.splitext(self.sim.my_WAV_in_file)[0] \
                 + "_new" + os.path.splitext(self.sim.my_WAV_in_file)[1]
 
         self.sim.wavFileWrite = False
-            
-                                                   
+
+
     def setSynthParams(self):
         self.sim.synthFreq = float(self.lineEditSynthFreq.text())
         self.sim.synthAmp  = float(self.lineEditSynthAmp.text()) / 100
         self.sim.SignalTypeTxt = self.comboBoxSignalType.currentText()
-        self.stIdx =self.comboBoxSignalType.currentIndex()       
+        self.stIdx =self.comboBoxSignalType.currentIndex()
         self.sim.SignalType = str(self.comboBoxSignalType.itemData(self.stIdx))
-        
-        print(self.sim.synthFreq, self.sim.synthAmp, self.sim.SignalType, 
+
+        print(self.sim.synthFreq, self.sim.synthAmp, self.sim.SignalType,
               self.sim.SignalTypeTxt)
 
     def setModulationParams(self):
@@ -235,13 +235,13 @@ class JitterGUI(QtGui.QMainWindow, GUI):
         self.sim.modFreq = float(self.lineEditModulationFreq.text())
         self.sim.modAmp  = float(self.lineEditModulationAmp.text())
         self.sim.modTypeTxt = self.comboBoxModulationType.currentText()
-        self.mtIdx =self.comboBoxModulationType.currentIndex()       
+        self.mtIdx =self.comboBoxModulationType.currentIndex()
         self.sim.modType = str(self.comboBoxModulationType.itemData(self.mtIdx))
         self.sim.modInPhase = self.checkBoxModulationPhase.isChecked()
 
-        print(self.sim.modFreq, self.sim.modAmp, self.sim.modType, 
+        print(self.sim.modFreq, self.sim.modAmp, self.sim.modType,
               self.sim.modInPhase)
-              
+
     def plotinit(self):
         if self.checkBoxPlotEnable.isChecked():
             fig = figure(1)
@@ -251,30 +251,30 @@ class JitterGUI(QtGui.QMainWindow, GUI):
                 self.ax1 = fig.add_subplot(111)
                 self.ax1.set_xlabel(t_label)
             self.ax1.set_ylabel(r'Sample Amplitude $\rightarrow$')
-            
-            self.plot_i, = self.ax1.plot(self.sim.time_i[PLT_BEG:PLT_END], 
-                          self.sim.data_i[:,0][PLT_BEG:PLT_END], 
-             'ro', linestyle = ':', label = 'Original')     
+
+            self.plot_i, = self.ax1.plot(self.sim.time_i[PLT_BEG:PLT_END],
+                          self.sim.data_i[:,0][PLT_BEG:PLT_END],
+             'ro', linestyle = ':', label = 'Original')
             if False: #PLT_JITTER: (currently deactivated)
-            # Plot resampled data against ORIGINAL time vector time_i to show 
-            # the time displacement (jitter)         
-                self.ax1.step(self.sim.time_i[R*PLT_BEG:R*PLT_END], 
-                     self.sim.data_o[:,0][R*PLT_BEG:R*PLT_END], 
+            # Plot resampled data against ORIGINAL time vector time_i to show
+            # the time displacement (jitter)
+                self.ax1.step(self.sim.time_i[R*PLT_BEG:R*PLT_END],
+                     self.sim.data_o[:,0][R*PLT_BEG:R*PLT_END],
                      'o', where='post', linestyle = '--', label = 'w/ Jitter',
                      color = (0.,0.,1,0.5), markerfacecolor=(0.,0.,1,0.5))
             else:
-            # Plot resampled data against NEW time vector time_new to show 
-            # quality of resampling    
-                self.plot_o, = self.ax1.step(self.sim.time_new[R*PLT_BEG:R*PLT_END], 
-                    self.sim.data_o[:,0][R*PLT_BEG:R*PLT_END], 
+            # Plot resampled data against NEW time vector time_new to show
+            # quality of resampling
+                self.plot_o, = self.ax1.step(self.sim.time_new[R*PLT_BEG:R*PLT_END],
+                    self.sim.data_o[:,0][R*PLT_BEG:R*PLT_END],
                     'o', where='post', linestyle = '--', label = 'Resamp. Data',
                     color = (0.,0.,1,0.5), markerfacecolor=(0.,0.,1,0.5))
             plt.legend()
-            
+
             if self.checkBoxPlotError.isChecked: # assume r == 1
                 self.ax21 = fig.add_subplot(212, sharex=self.ax1) # lock x-Axes of both plots
-                self.ax21.plot(self.sim.time_new[PLT_BEG:PLT_END], 
-                     (self.sim.data_o[:,0] - self.sim.data_i[:,0])[PLT_BEG:PLT_END], 
+                self.ax21.plot(self.sim.time_new[PLT_BEG:PLT_END],
+                     (self.sim.data_o[:,0] - self.sim.data_i[:,0])[PLT_BEG:PLT_END],
                       color = 'r', label = 'Amp. Error')
                 self.ax22 = self.ax21.twinx() # second y-axis with separate scaling
                 self.ax22.plot(self.sim.time_new[PLT_BEG:PLT_END],
@@ -283,33 +283,33 @@ class JitterGUI(QtGui.QMainWindow, GUI):
                 self.ax21.set_xlabel(t_label)
                 self.ax21.set_ylabel(r'Amplitude Error  $\rightarrow$')
                 self.ax22.set_ylabel(r'Time Error (UI) $\rightarrow$')
-            # legend cannot collect labels from different axes    
+            # legend cannot collect labels from different axes
             # -> ask matplotlib for plotted objects and their labels
             # and display them in one legend box
             lines, labels = self.ax21.get_legend_handles_labels()
             lines2, labels2 = self.ax22.get_legend_handles_labels()
             self.ax22.legend(lines + lines2, labels + labels2)
             plt.tight_layout()
-        
-              
 
-#------------------------------------------------------------------------------      
+
+
+#------------------------------------------------------------------------------
 
 class JitterSim(QtCore.QThread):
-    def __init__(self, lock, parent=None):        
+    def __init__(self, lock, parent=None):
         super(JitterSim, self).__init__(parent)
         self.lock = lock
         self.stopped = False
         self.mutex = QtCore.QMutex()
         self.completed = False
         self.DEBUG = True
-        
+
     def initialize(self):
         if self.isStopped:
-            self.stopped = False        
-            self.completed = False        
+            self.stopped = False
+            self.completed = False
 
-        
+
     def run(self):
         """
         run is an overloaded method from QThread. Errors occuring in this scope
@@ -323,24 +323,24 @@ class JitterSim(QtCore.QThread):
         self.haltAudio()
 #        self.finished.emit(self.completed, self.index)
         print("FINISHED!")
-        
+
 
     def stop(self):
         """
         Use QMutexLocker as a context manager: Lock self.mutex (= block it
-        until it can obtain the lock) and unlock it when the control flow 
+        until it can obtain the lock) and unlock it when the control flow
         leaves the 'with' scope
         """
         with QtCore.QMutexLocker(self.mutex):
             self.stopped = True
-            
+
     def isStopped(self):
         try:
             self.mutex.lock()
             return self.stopped
         finally:
             self.mutex.unlock()
-            
+
     def generateSynthSignal(self):
         self.data_i = np.empty((N_SYNTH_I, 2), dtype = dtype_i)
         self.time_i = linspace(0, N_SYNTH_I / SYNTH_RATE_I, N_SYNTH_I)
@@ -354,7 +354,7 @@ class JitterSim(QtCore.QThread):
         #   data_i[:,0] = data_i[:,1] = sig.sawtooth(2 * pi * f_sig * time_i)#, width=0.5)
 
         self.data_i[:,0] = self.data_i[:,1] = data * 32767
-        
+
     def initAudio(self):
         # initialize audio devices
         self.wf_in = wave.open(self.my_WAV_in_file, 'r') # open WAV-File for reading
@@ -378,11 +378,11 @@ class JitterSim(QtCore.QThread):
 
         print("Input File:  %s\nOutput File: %s\nSamples: %d\n\
         Rate_i: %.1f Channels: %d WL %d Bytes\n Rate_o: %.1f " \
-        %(self.my_WAV_in_file, self.my_WAV_out_file, self.n_smp_i, rate_i, 
+        %(self.my_WAV_in_file, self.my_WAV_out_file, self.n_smp_i, rate_i,
           self.n_chan_i, self.dtype_i, self.rate_o))
-        
+
         self.n_smp_i = max(N_SMP_MAX, self.n_smp_i)
-        
+
         self.p = pyaudio.PyAudio() # instantiate PyAudio, start PortAudio system + list devices
         for i in range(self.p.get_device_count()):
             print (self.p.get_device_info_by_index(i))
@@ -391,7 +391,7 @@ class JitterSim(QtCore.QThread):
         self.stream = self.p.open(format=self.p.get_format_from_width(self.wf_in.getsampwidth()),
                         channels=self.wf_in.getnchannels(),
                         rate=self.wf_in.getframerate(),
-                        output=True)         
+                        output=True)
 
 
     def play(self):
@@ -404,14 +404,14 @@ class JitterSim(QtCore.QThread):
         print(np.shape(samples_in))
         # Input / Output samples, split into two channels (incl. padding):
         self.data_i = self.data_o = zeros((2, CHUNK), dtype = np_type)
-        # Time vector for one frame 
+        # Time vector for one frame
         self.time_f_o = zeros((2, CHUNK))
         #----------------------------------------------------------------------
-        
-        # read WAV-file chunk by chunk        
+
+        # read WAV-file chunk by chunk
         data = 'dummy'
         self.fr = 0 # frame zero
-        while (data and not self.isStopped()): 
+        while (data and not self.isStopped()):
             # read frames into string and convert to numpy array & split channel
             #  until end of file or "STOP" is clicked,
 
@@ -420,10 +420,10 @@ class JitterSim(QtCore.QThread):
             wf_in_pos = self.wf_in.tell() # read file index position
 
             if len(samples_in) < CHUNK * 2: # has current frame full length?
-                # no, is it longer than the padding? 
+                # no, is it longer than the padding?
                 if len(samples_in) <= 2 * FR_PAD: break # no, exit the loop
                 else: # frame has reduced length -> pre-allocate arrays again
-                    samples_out = zeros(len(samples_in) - 4 * FR_PAD, dtype=np_type) 
+                    samples_out = zeros(len(samples_in) - 4 * FR_PAD, dtype=np_type)
                     self.data_i = self.data_o = \
                             zeros((2, len(samples_in)/2), dtype = np_type)
                     self.time_f_o = zeros((2, len(samples_in)/2))
@@ -435,14 +435,14 @@ class JitterSim(QtCore.QThread):
             self.data_i[0] = samples_in[0::2] # ... starting with 0 (L)
             self.data_i[1] = samples_in[1::2] # ... starting with 1 (R)
 #            print("IDs:", id(self.data_i), id(samples_in))
-                
+
             if self.modType == "pass": # pass-through without interpolation
                 samples_out[1::2] = self.data_i[0,FR_PAD:len(samples_out)/2+FR_PAD] # L Ch.
-                samples_out[0::2] = self.data_i[1,FR_PAD:len(samples_out)/2+FR_PAD] # R Ch. 
-            else:            
+                samples_out[0::2] = self.data_i[1,FR_PAD:len(samples_out)/2+FR_PAD] # R Ch.
+            else:
                 self.interpolate_univar(DEBUG = False)
-                # copy resampled data except first and last FR_PAD samples and 
-                # interleave L + R          
+                # copy resampled data except first and last FR_PAD samples and
+                # interleave L + R
                 samples_out[1::2] = self.data_o[0, FR_PAD:
                                         len(samples_out)/2+FR_PAD] # L Ch.
                 samples_out[0::2] = self.data_o[1, FR_PAD:
@@ -471,7 +471,7 @@ class JitterSim(QtCore.QThread):
 
 
     def interpolate_univar(self, DEBUG):
-        
+
         #=====================================================================
         # Interpolate the input data frame by frame
         #=====================================================================
@@ -484,9 +484,9 @@ class JitterSim(QtCore.QThread):
         if DEBUG:
             print("Frame # %d w/len %d" %(self.fr, fr_len))
             print("Time Index:", min(smp_range_i), max(smp_range_i), len(smp_range_i))
-            print("Time_i\n=================\nMin./Max :", 
+            print("Time_i\n=================\nMin./Max :",
                   min(self.time_i), max(self.time_i))
-            print("Time_o\n=================\nMin./Max :", 
+            print("Time_o\n=================\nMin./Max :",
                   min(self.time_o), max(self.time_o))
             print("Time     :", self.time_o[0:10])
 
@@ -496,7 +496,7 @@ class JitterSim(QtCore.QThread):
 
         if DEBUG:
             print("Time_f_o\n================\n", self.time_f_o[0][0:10])
-            print("Min./Max.:", min(self.time_f_o[0]), 
+            print("Min./Max.:", min(self.time_f_o[0]),
                   max(self.time_f_o[0]),len(self.time_f_o[0]))
             print("DataType:", np.dtype(self.time_f_o[0,0]))
 
@@ -512,17 +512,17 @@ class JitterSim(QtCore.QThread):
         elif self.modType == 'rnd':
         # gaussian distributed noise with a variance of modAmp
             ModSig = self.modAmp/self.rate_o * rnd.randn(CHUNK)
-        
+
         # Modulate sample times by adding modulation signal to time vector
         # keeping the original time vector
         if not self.modInPhase:
-            self.time_f_o[0] += ModSig # modulation of left 
-            self.time_f_o[1] += ModSig # and right channel in phase            
+            self.time_f_o[0] += ModSig # modulation of left
+            self.time_f_o[1] += ModSig # and right channel in phase
         #self.time_i += ModSig # modulate INPUT (original) time vector
         else:
-            self.time_f_o[0] += ModSig # modulate new time vector, keep old one     
+            self.time_f_o[0] += ModSig # modulate new time vector, keep old one
             self.time_f_o[1] -= ModSig # modulate new time vector, keep old one
-        
+
         smp_range_i = range(len(self.data_i[0]))
 #        bbox = [time_f_i[0], time_f_i[-1]]
 #        bbox = [0,-1]
@@ -532,63 +532,63 @@ class JitterSim(QtCore.QThread):
             print(time_f_i[smp_range_i], self.data_i[0][smp_range_i])
             print(time_f_i, self.data_i[0])
         fu_l = intp.UnivariateSpline(
-                time_f_i[smp_range_i], self.data_i[0][smp_range_i], 
+                time_f_i[smp_range_i], self.data_i[0][smp_range_i],
                 k = ip, s = 0) # bbox=bbox,
         fu_r = intp.UnivariateSpline(
-                time_f_i[smp_range_i], self.data_i[1][smp_range_i], 
+                time_f_i[smp_range_i], self.data_i[1][smp_range_i],
                 k = ip, s = 0) # bbox=bbox,
 
-        self.data_o[0] = fu_l(self.time_f_o[0]) # interpolate data at new 
+        self.data_o[0] = fu_l(self.time_f_o[0]) # interpolate data at new
         self.data_o[1] = fu_r(self.time_f_o[1]) # time points
 
     def interpolate_frame(self):
-        
+
         #=====================================================================
         # Interpolate the input data frame by frame
         #=====================================================================
 
         smp_range_i = range(self.fr*FR_LEN_I-FR_PAD, (self.fr+1)*FR_LEN_I + FR_PAD)
         print(len(self.time_i[smp_range_i]), len(self.data_i[smp_range_i]))
-        f=intp.interp1d(self.time_i[smp_range_i], self.data_i[smp_range_i], 
+        f=intp.interp1d(self.time_i[smp_range_i], self.data_i[smp_range_i],
                         axis = 0, kind = ip_fram, assume_sorted = True)
         print(min(self.time_i[smp_range_i]))
 
         smp_range_o = range(self.fr*fr_len_o, (self.fr+1)*fr_len_o)
         print(min(self.time_o[smp_range_o]))
-        self.data_o[smp_range_o] = f(self.time_o[smp_range_o])       
+        self.data_o[smp_range_o] = f(self.time_o[smp_range_o])
 
     def interpolate(self):
-        
+
         #=====================================================================
         # Interpolate the input data frame by frame
         #=====================================================================
 #        fu_l = intp.InterpolatedUnivariateSpline(time_i, data_i[:n_smp_i,0], k = ip)
          # initialize array for output data :
-  
+
         for i in range(self.n_frames):
-    
+
             if i == 0: # first frame, don't try to access elements before first one
-                f=intp.interp1d(self.time_i[i*FR_LEN_I:(i+1)*FR_LEN_I+FR_PAD], 
-                            self.data_i[i*FR_LEN_I:(i+1)*FR_LEN_I+FR_PAD], 
+                f=intp.interp1d(self.time_i[i*FR_LEN_I:(i+1)*FR_LEN_I+FR_PAD],
+                            self.data_i[i*FR_LEN_I:(i+1)*FR_LEN_I+FR_PAD],
                                      kind = ip_fram, assume_sorted = True)
                 self.data_o[i*self.fr_len_o:(i+1)*self.fr_len_o] \
                     = f(self.time_o[i*self.fr_len_o:(i+1)*self.fr_len_o])
             else:
-                f=intp.interp1d(self.time_i[i*FR_LEN_I-FR_PAD:(i+1)*FR_LEN_I+FR_PAD], 
-                                self.data_i[i*FR_LEN_I-FR_PAD:(i+1)*FR_LEN_I+FR_PAD], 
+                f=intp.interp1d(self.time_i[i*FR_LEN_I-FR_PAD:(i+1)*FR_LEN_I+FR_PAD],
+                                self.data_i[i*FR_LEN_I-FR_PAD:(i+1)*FR_LEN_I+FR_PAD],
                                          kind = ip_fram, assume_sorted = True)
                 self.data_o[i*self.fr_len_o:(i+1)*self.fr_len_o] \
                     = f(self.time_o[i*self.fr_len_o:(i+1)*self.fr_len_o])
 
-    
-#------------------------------------------------------------------------------
- 
 
-  
+#------------------------------------------------------------------------------
+
+
+
 if __name__ == '__main__':
 
     app = QtGui.QApplication(sys.argv)
     form = JitterGUI()
     form.show()
-   
+
     app.exec_()
