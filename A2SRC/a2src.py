@@ -127,7 +127,7 @@ class JitterGUI(QtGui.QMainWindow, GUI):
         self.comboBoxInputType.clear()
         self.comboBoxInputType.addItem('WAV-File', 'file')
         self.comboBoxInputType.addItem('Record', 'record')
-        self.comboBoxInputType.addItem('Synthetic', 'synth')
+        #self.comboBoxInputType.addItem('Synthetic', 'synth')
         
         self.comboBoxSignalType.clear()
         self.comboBoxSignalType.addItem('Sinusoidal', 'sine')
