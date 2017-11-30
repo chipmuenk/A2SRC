@@ -22,10 +22,8 @@ from numpy.fft import fft, ifft, fftshift, ifftshift, fftfreq
 import scipy.signal as sig
 import scipy.interpolate as intp
 
-try:
-    import vispy as plt
-except importError:  
-    import matplotlib.pyplot as plt
+
+import matplotlib.pyplot as plt
     
 from matplotlib.pyplot import (figure, plot, stem, grid, xlabel, ylabel,
     subplot, title, clf, xlim, ylim)
@@ -89,7 +87,7 @@ dtype_o = 'int16' # data type for output data (*.wav -> int16)
 # Plotting Parameters
 #==============================================================================
 PLT_ENB = True  # enable plotting
-PLT_ERR = True  # plot amplitude and time error 
+PLT_ERR = False  # plot amplitude and time error 
 #              (only useful for rate_i = rate_o and n_smp_i = n_smp_o)
 PLT_JITTER = True # Plot resampled data against original time vector time_i.
                 # This is useful to display the time displacement due to 
@@ -97,6 +95,7 @@ PLT_JITTER = True # Plot resampled data against original time vector time_i.
                 # PLT_JITTER = FALSE
 PLT_BEG = 1000000 # first (input) plot sample
 PLT_END = 1100000 # last (input) plot sample
+PLT_SPECGRM = False
 
 NFFT = 8096     # FFT length for spectrogram and FFT
 DB_MIN = -140   # lower display limit (dB) for spectrogram and FFT
@@ -228,57 +227,58 @@ if PLT_ENB:
         ax21.set_xlabel(t_label)
         ax21.set_ylabel(r'Amplitude Error  $\rightarrow$')
         ax22.set_ylabel(r'Time Error (UI) $\rightarrow$')
-    # legend cannot collect labels from different axes    
-    # -> ask matplotlib for plotted objects and their labels
-    # and display them in one legend box
-    lines, labels = ax21.get_legend_handles_labels()
-    lines2, labels2 = ax22.get_legend_handles_labels()
-    ax22.legend(lines + lines2, labels + labels2)
+        # legend cannot collect labels from different axes    
+        # -> ask matplotlib for plotted objects and their labels
+        # and display them in one legend box
+        lines, labels = ax21.get_legend_handles_labels()
+        lines2, labels2 = ax22.get_legend_handles_labels()
+        ax22.legend(lines + lines2, labels + labels2)
     plt.tight_layout()
     
 #==============================================================================
 # Spectrogram
 #==============================================================================
-    figure(2)
-    #-----  Define windowing function for Spectrogram / FFT -------------------
-    win = sig.windows.kaiser(NFFT,20) # kaiser window needs shape parameter
-#    win = sig.windows.boxcar(NFFT) # rectangular window
+    if PLT_SPECGRM:
+        figure(2)
+        #-----  Define windowing function for Spectrogram / FFT -------------------
+        win = sig.windows.kaiser(NFFT,20) # kaiser window needs shape parameter
+    #    win = sig.windows.boxcar(NFFT) # rectangular window
+        
+        # ----- Calculate Equivalent Noise Bandwidth + Coherent Gain --------------
+        ENBW = len(win)*np.sum(win**2)/ np.sum(abs(win))**2
+        CGain = np.sum(win)/len(win)
     
-    # ----- Calculate Equivalent Noise Bandwidth + Coherent Gain --------------
-    ENBW = len(win)*np.sum(win**2)/ np.sum(abs(win))**2
-    CGain = np.sum(win)/len(win)
-
-    # ----- Calculate and plot magnitude spectrogram ------------------------------------
-# TODO: Spectrogram is always scaled for a two-sided spectrum 
-# -> too low by a factor of two (- 3dB) for one-sided spectrum (except @ DC ...)
-    Pxx, freqs, bins, im =\
-                    plt.specgram(data_o[:,0][r*PLT_BEG:r*PLT_END]/(NFFT*CGain), 
-                    NFFT=NFFT, Fs=rate_o, noverlap=None, mode = 'magnitude', 
-                    window = win, scale = 'dB', vmin = DB_MIN, vmax = DB_MAX)
-    # freqs: DFT frequencies, bins: time steps
-    #                           optional: cmap=cm.gist_heat                           
-    n_bins_FFT = len(bins)
-    xlabel(t_label)
-    ylabel(f_label)
-    xlim([0, r*(PLT_END - PLT_BEG)/rate_o])
-    # TODO: x-Achsenbeschriftung muss um PLT_BEG / rate_o verschoben werden
-    ylim([0,rate_o/2])
-    plt.colorbar(label = H_label)
-    plt.tight_layout()
+        # ----- Calculate and plot magnitude spectrogram ------------------------------------
+    # TODO: Spectrogram is always scaled for a two-sided spectrum 
+    # -> too low by a factor of two (- 3dB) for one-sided spectrum (except @ DC ...)
+        Pxx, freqs, bins, im =\
+                        plt.specgram(data_o[:,0][r*PLT_BEG:r*PLT_END]/(NFFT*CGain), 
+                        NFFT=NFFT, Fs=rate_o, noverlap=None, mode = 'magnitude', 
+                        window = win, scale = 'dB', vmin = DB_MIN, vmax = DB_MAX)
+        # freqs: DFT frequencies, bins: time steps
+        #                           optional: cmap=cm.gist_heat                           
+        n_bins_FFT = len(bins)
+        xlabel(t_label)
+        ylabel(f_label)
+        xlim([0, r*(PLT_END - PLT_BEG)/rate_o])
+        # TODO: x-Achsenbeschriftung muss um PLT_BEG / rate_o verschoben werden
+        ylim([0,rate_o/2])
+        plt.colorbar(label = H_label)
+        plt.tight_layout()
 #==============================================================================
 # Single FFT window
 #==============================================================================
-    k_bin = n_bins_FFT/2 # select middle FFT bin to display
-    figure(3)
-    plot(freqs, 20*log10(Pxx[:,k_bin]))
-    
-    xlabel(f_label)
-    ylabel(H_label)
-    title(r'$|H(e^{j 2 \pi f / f_S},\, t)|$ bei $t=%0.1f$ s' %(bins[k_bin]))
-    ylim([DB_MIN, DB_MAX])
-    xlim([0,rate_o/2])
-    grid(True)
-    plt.tight_layout()
+        k_bin = n_bins_FFT/2 # select middle FFT bin to display
+        figure(3)
+        plot(freqs, 20*log10(Pxx[:,k_bin]))
+        
+        xlabel(f_label)
+        ylabel(H_label)
+        title(r'$|H(e^{j 2 \pi f / f_S},\, t)|$ bei $t=%0.1f$ s' %(bins[k_bin]))
+        ylim([DB_MIN, DB_MAX])
+        xlim([0,rate_o/2])
+        grid(True)
+        plt.tight_layout()
 #-------------------------------------------
     mem.append(memory_usage()) # 3
     print("... plotted in %0.2f s using %0.2f MB" %((time.time()-t2), mem[-1]))
